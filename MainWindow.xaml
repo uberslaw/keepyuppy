@@ -111,7 +111,7 @@
     <Border.Effect>
       <DropShadowEffect BlurRadius="22" ShadowDepth="0" Opacity="0.28" Color="#1E5F8A"/>
     </Border.Effect>
-    <Grid ClipToBounds="True">
+    <Grid x:Name="ShellContent" SizeChanged="ShellContent_SizeChanged">
       <Ellipse Width="72" Height="24" Fill="White" Opacity="0.5" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="26,146,0,0" IsHitTestVisible="False"/>
       <Ellipse Width="88" Height="26" Fill="White" Opacity="0.34" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="164,246,0,0" IsHitTestVisible="False"/>
       <Ellipse Width="64" Height="18" Fill="White" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,22,96" IsHitTestVisible="False"/>

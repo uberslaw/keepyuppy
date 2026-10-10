@@ -340,6 +340,23 @@ public partial class MainWindow : Window
             e.CancelCommand();
     }
 
+    private void ShellContent_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width <= 0 || e.NewSize.Height <= 0)
+            return;
+
+        var radius = Shell.CornerRadius.TopLeft;
+        if (ShellContent.Clip is not RectangleGeometry clip)
+        {
+            clip = new RectangleGeometry();
+            ShellContent.Clip = clip;
+        }
+
+        clip.RadiusX = radius;
+        clip.RadiusY = radius;
+        clip.Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height);
+    }
+
     private void Shell_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState != MouseButtonState.Pressed)
