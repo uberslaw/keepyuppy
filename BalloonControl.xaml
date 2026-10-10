@@ -1,0 +1,31 @@
+<UserControl x:Class="KeepyUppy.BalloonControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False"
+             Width="100"
+             Height="132">
+  <Viewbox Stretch="Uniform">
+    <Canvas Width="100" Height="132">
+      <Path x:Name="StringPath"
+            Stroke="#2E86B3"
+            StrokeThickness="2.2"
+            StrokeStartLineCap="Round"
+            StrokeEndLineCap="Round"
+            Data="M50,98 C68,112 34,118 52,128"/>
+      <Ellipse x:Name="Body"
+               Canvas.Left="12"
+               Canvas.Top="2"
+               Width="76"
+               Height="92"
+               Fill="#4EB4E0"/>
+      <Polygon x:Name="Knot"
+               Points="41,86 59,86 50,99"
+               Fill="#2E86B3"/>
+      <Ellipse Canvas.Left="26"
+               Canvas.Top="16"
+               Width="20"
+               Height="12"
+               Fill="#D9FFFFFF"/>
+    </Canvas>
+  </Viewbox>
+</UserControl>
