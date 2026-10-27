@@ -416,6 +416,13 @@
                   <TextBlock x:Name="CountdownText" Text="00:30:00" HorizontalAlignment="Center" TextAlignment="Center"
                              FontFamily="{StaticResource DisplayFont}" FontSize="32" Foreground="#E0862A" MinHeight="40" Visibility="Collapsed"/>
                 </StackPanel>
+                <Grid Margin="0,14,0,0">
+                  <TextBlock Text="Start with Windows" FontFamily="{StaticResource DisplayFont}" FontSize="16"
+                             Foreground="#1E5F8A" VerticalAlignment="Center"/>
+                  <ToggleButton x:Name="StartupSwitch" Style="{StaticResource TimerSwitchStyle}"
+                                HorizontalAlignment="Right" Click="StartupSwitch_Click"
+                                AutomationProperties.Name="Start with Windows"/>
+                </Grid>
               </StackPanel>
             </Border>
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" TextAlignment="Center" Foreground="#EF6F57"

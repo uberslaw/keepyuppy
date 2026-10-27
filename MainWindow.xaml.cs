@@ -29,6 +29,8 @@ public partial class MainWindow : Window
     private int _minutes;
     private int _seconds;
     private bool _timerEnabled;
+    private bool _startWithWindows;
+    private string? _startupError;
     private bool _writingSwitch;
 
     public MainWindow(bool preview = false)
@@ -42,6 +44,7 @@ public partial class MainWindow : Window
         _minutes = settings.Minutes;
         _seconds = settings.Seconds;
         _timerEnabled = settings.TimerEnabled;
+        _startWithWindows = settings.StartWithWindows;
         WriteBoxes();
 
         DataObject.AddPastingHandler(HourBox, TimeBox_Pasting);
@@ -71,6 +74,11 @@ public partial class MainWindow : Window
             ShowInTaskbar = false;
             _tray = new TrayController(this, _awake);
         }
+
+        if (preview)
+            _startWithWindows = StartupRegistration.IsRegistered();
+        else
+            ReconcileStartup();
 
         Sync();
         if (!preview)
@@ -202,6 +210,45 @@ public partial class MainWindow : Window
             UpdateCountdown();
     }
 
+    private void StartupSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_writingSwitch || _preview)
+        {
+            if (_preview)
+                StartupSwitch.IsChecked = _startWithWindows;
+            return;
+        }
+
+        var wantOn = StartupSwitch.IsChecked == true;
+        var ok = wantOn ? StartupRegistration.Enable() : StartupRegistration.Disable();
+        _startWithWindows = StartupRegistration.IsRegistered();
+        if (!ok || _startWithWindows != wantOn)
+            _startupError = wantOn ? "Couldn't start with Windows." : "Couldn't turn off start with Windows.";
+        else
+            _startupError = null;
+
+        Sync();
+        SaveSettings();
+    }
+
+    private void ReconcileStartup()
+    {
+        var registered = StartupRegistration.IsRegistered();
+        if (_startWithWindows && !registered)
+        {
+            var wrote = StartupRegistration.Enable();
+            registered = StartupRegistration.IsRegistered();
+            if (!wrote || !registered)
+                _startupError = "Couldn't start with Windows.";
+        }
+        else if (!_startWithWindows && registered)
+        {
+            AppLog.Write("startup registry present; preference updated");
+        }
+
+        _startWithWindows = registered;
+    }
+
     private TimeSpan SelectedDuration() =>
         _timerEnabled ? new TimeSpan(_hours, _minutes, _seconds) : TimeSpan.Zero;
 
@@ -227,12 +274,13 @@ public partial class MainWindow : Window
 
         _writingSwitch = true;
         TimerSwitch.IsChecked = _timerEnabled;
+        StartupSwitch.IsChecked = _startWithWindows;
         _writingSwitch = false;
         UpdateCountdown();
         SetMotion(on);
         _tray?.Sync(on);
 
-        var error = _awake.LastError;
+        var error = _startupError ?? _awake.LastError;
         ErrorText.Text = error ?? "";
         ErrorText.Visibility = string.IsNullOrEmpty(error) ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -394,7 +442,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            SettingsStore.Save(new AppSettings(_hours, _minutes, _seconds, _timerEnabled));
+            SettingsStore.Save(new AppSettings(_hours, _minutes, _seconds, _timerEnabled, _startWithWindows));
         }
         catch (Exception ex)
         {
