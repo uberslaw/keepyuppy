@@ -22,7 +22,7 @@ internal sealed class TrayController : IDisposable
 
         _toggle = new Forms.ToolStripMenuItem("Keep awake", null, (_, _) => _window.ToggleFromUser());
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Open", null, (_, _) => _window.BringUp());
+        menu.Items.Add("Open", null, (_, _) => OpenFromTray());
         menu.Items.Add(_toggle);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => _window.RequestExit());
@@ -37,8 +37,39 @@ internal sealed class TrayController : IDisposable
         _notify.MouseUp += (_, e) =>
         {
             if (e.Button == Forms.MouseButtons.Left)
-                _window.BringUp();
+                OpenFromTray();
         };
+    }
+
+    private void OpenFromTray()
+    {
+        try
+        {
+            var dispatcher = _window.Dispatcher;
+            if (dispatcher.CheckAccess())
+            {
+                BringUpOnDispatcher();
+                return;
+            }
+
+            dispatcher.BeginInvoke(BringUpOnDispatcher);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex.ToString());
+        }
+    }
+
+    private void BringUpOnDispatcher()
+    {
+        try
+        {
+            _window.BringUp();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex.ToString());
+        }
     }
 
     public void Sync(bool on)

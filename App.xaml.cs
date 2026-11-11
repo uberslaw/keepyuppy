@@ -31,6 +31,23 @@ public partial class App : Application
                 return;
             }
 
+            if (HasFlag(e.Args, "--show-test"))
+            {
+                var code = 1;
+                try
+                {
+                    code = new MainWindow().RunShowTest();
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Write("show-test FAIL " + ex);
+                }
+
+                Shutdown(code);
+                Environment.Exit(code);
+                return;
+            }
+
             if (TryGetOption(e.Args, "--preview", out var previewPath))
             {
                 ShowPreview(previewPath, awake: false);
@@ -56,7 +73,7 @@ public partial class App : Application
             }
 
             _window = new MainWindow();
-            _window.StartInTray();
+            _window.StartInTray(HasFlag(e.Args, StartupRegistration.AwakeArgument));
         }
         catch (Exception ex)
         {
@@ -143,7 +160,19 @@ public partial class App : Application
             try
             {
                 while (handle.WaitOne())
-                    Dispatcher.BeginInvoke(() => _window?.BringUp());
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        try
+                        {
+                            _window?.BringUp();
+                        }
+                        catch (Exception ex)
+                        {
+                            AppLog.Write(ex.ToString());
+                        }
+                    });
+                }
             }
             catch (ObjectDisposedException)
             {

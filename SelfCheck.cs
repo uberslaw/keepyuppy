@@ -51,14 +51,20 @@ internal static class SelfCheck
             var folder = Path.Combine(Path.GetTempPath(), "KeepyUppy-selfcheck-" + Guid.NewGuid().ToString("N"));
             try
             {
-                var settings = new AppSettings(1, 2, 3, true, true);
-                SettingsStore.Save(settings, folder);
-                var loaded = SettingsStore.Load(folder);
-                lines.Add($"settings={loaded.Hours:00}:{loaded.Minutes:00}:{loaded.Seconds:00} timer={loaded.TimerEnabled} startup={loaded.StartWithWindows}");
-                if (loaded != settings)
+                foreach (var settings in new AppSettings[]
                 {
-                    ok = false;
-                    lines.Add("FAIL settings read-back");
+                    new(1, 2, 3, true, true, false),
+                    new(4, 5, 6, false, false, true)
+                })
+                {
+                    SettingsStore.Save(settings, folder);
+                    var loaded = SettingsStore.Load(folder);
+                    lines.Add($"settings={loaded.Hours:00}:{loaded.Minutes:00}:{loaded.Seconds:00} timer={loaded.TimerEnabled} startup={loaded.StartWithWindows} launch={loaded.LaunchAtLogin}");
+                    if (loaded != settings)
+                    {
+                        ok = false;
+                        lines.Add("FAIL settings read-back");
+                    }
                 }
 
                 File.WriteAllText(Path.Combine(folder, "settings.json"), """
@@ -70,7 +76,7 @@ internal static class SelfCheck
                     }
                     """);
                 var partial = SettingsStore.Load(folder);
-                if (partial.StartWithWindows || !partial.TimerEnabled || partial.Hours != 4 || partial.Minutes != 5 || partial.Seconds != 6)
+                if (partial.StartWithWindows || partial.LaunchAtLogin || !partial.TimerEnabled || partial.Hours != 4 || partial.Minutes != 5 || partial.Seconds != 6)
                 {
                     ok = false;
                     lines.Add("FAIL settings missing startup field");
@@ -82,8 +88,19 @@ internal static class SelfCheck
                     Directory.Delete(folder, recursive: true);
             }
 
-            if (StartupRegistration.FormatRunCommand(@"C:\NoSpaces\KeepyUppy.exe") != @"C:\NoSpaces\KeepyUppy.exe"
-                || StartupRegistration.FormatRunCommand(@"C:\Program Files\KeepyUppy.exe") != @"""C:\Program Files\KeepyUppy.exe""")
+            var plain = StartupRegistration.FormatRunCommand(@"C:\NoSpaces\KeepyUppy.exe");
+            var plainAwake = StartupRegistration.FormatRunCommand(@"C:\NoSpaces\KeepyUppy.exe", awake: true);
+            var quoted = StartupRegistration.FormatRunCommand(@"C:\Program Files\KeepyUppy.exe");
+            var quotedAwake = StartupRegistration.FormatRunCommand(@"C:\Program Files\KeepyUppy.exe", awake: true);
+            if (plain != @"C:\NoSpaces\KeepyUppy.exe"
+                || quoted != @"""C:\Program Files\KeepyUppy.exe"""
+                || plainAwake != @"C:\NoSpaces\KeepyUppy.exe --awake"
+                || quotedAwake != @"""C:\Program Files\KeepyUppy.exe"" --awake"
+                || StartupRegistration.HasAwakeArgument(plain)
+                || StartupRegistration.HasAwakeArgument(quoted)
+                || StartupRegistration.HasAwakeArgument(@"C:\awake\KeepyUppy.exe")
+                || !StartupRegistration.HasAwakeArgument(plainAwake)
+                || !StartupRegistration.HasAwakeArgument(quotedAwake))
             {
                 ok = false;
                 lines.Add("FAIL startup command format");
@@ -145,34 +162,10 @@ internal static class SelfCheck
 
         try
         {
-            if (!StartupRegistration.Enable() || !StartupRegistration.IsRegistered())
-            {
-                ok = false;
-                lines.Add("FAIL startup enable");
-                return;
-            }
+            CheckEnabledMode(lines, ref ok, awake: true, StartupMode.StartWithWindows, "awake", runKey, othersBefore);
+            CheckEnabledMode(lines, ref ok, awake: false, StartupMode.LaunchAtLogin, "login", runKey, othersBefore);
 
-            using (var key = Registry.CurrentUser.OpenSubKey(runKey, writable: false))
-            {
-                var value = key?.GetValue(StartupRegistration.ValueName) as string;
-                var path = Environment.ProcessPath ?? "";
-                var expected = StartupRegistration.FormatRunCommand(path);
-                lines.Add("startup=" + value);
-                if (!string.Equals(value, expected, StringComparison.OrdinalIgnoreCase))
-                {
-                    ok = false;
-                    lines.Add("FAIL startup command");
-                }
-
-                var others = key?.GetValueNames().Where(name => !name.Equals(StartupRegistration.ValueName, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [];
-                if (!othersBefore.SequenceEqual(others, StringComparer.OrdinalIgnoreCase))
-                {
-                    ok = false;
-                    lines.Add("FAIL startup touched other run values");
-                }
-            }
-
-            if (!StartupRegistration.Disable() || StartupRegistration.IsRegistered())
+            if (!StartupRegistration.Disable() || !StartupRegistration.TryGetMode(out var off) || off != StartupMode.Off)
             {
                 ok = false;
                 lines.Add("FAIL startup disable");
@@ -188,6 +181,42 @@ internal static class SelfCheck
                 else
                     key.SetValue(StartupRegistration.ValueName, original!, originalKind);
             }
+        }
+    }
+
+    private static void CheckEnabledMode(List<string> lines, ref bool ok, bool awake, StartupMode expected, string label, string runKey, string[] othersBefore)
+    {
+        if (!StartupRegistration.Enable(awake) || !StartupRegistration.TryGetMode(out var mode) || mode != expected)
+        {
+            ok = false;
+            lines.Add("FAIL startup enable " + label);
+            return;
+        }
+
+        using var key = Registry.CurrentUser.OpenSubKey(runKey, writable: false);
+        var value = key?.GetValue(StartupRegistration.ValueName) as string;
+        var path = Environment.ProcessPath ?? "";
+        var expectedCommand = StartupRegistration.FormatRunCommand(path, awake);
+        lines.Add("startup-" + label + "=" + value);
+        if (!string.Equals(value, expectedCommand, StringComparison.OrdinalIgnoreCase)
+            || StartupRegistration.HasAwakeArgument(value ?? "") != awake)
+        {
+            ok = false;
+            lines.Add("FAIL startup command " + label);
+        }
+
+        var names = key?.GetValueNames() ?? [];
+        if (names.Count(name => name.Equals(StartupRegistration.ValueName, StringComparison.OrdinalIgnoreCase)) != 1)
+        {
+            ok = false;
+            lines.Add("FAIL startup value count " + label);
+        }
+
+        var others = names.Where(name => !name.Equals(StartupRegistration.ValueName, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (!othersBefore.SequenceEqual(others, StringComparer.OrdinalIgnoreCase))
+        {
+            ok = false;
+            lines.Add("FAIL startup touched other run values");
         }
     }
 

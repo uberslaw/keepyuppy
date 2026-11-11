@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace KeepyUppy;
 
-internal readonly record struct AppSettings(int Hours, int Minutes, int Seconds, bool TimerEnabled = false, bool StartWithWindows = false)
+internal readonly record struct AppSettings(int Hours, int Minutes, int Seconds, bool TimerEnabled = false, bool StartWithWindows = false, bool LaunchAtLogin = false)
 {
     public static AppSettings Default => new(0, 30, 0);
 
@@ -11,7 +11,8 @@ internal readonly record struct AppSettings(int Hours, int Minutes, int Seconds,
         Math.Clamp(Minutes, 0, 59),
         Math.Clamp(Seconds, 0, 59),
         TimerEnabled,
-        StartWithWindows);
+        StartWithWindows,
+        LaunchAtLogin);
 
     public TimeSpan ToDuration()
     {

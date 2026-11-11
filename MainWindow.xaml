@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:KeepyUppy"
         Title="KeepyUppy"
         Width="430"
-        Height="600"
+        Height="700"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -257,10 +257,6 @@
                        FontFamily="{StaticResource DisplayFont}"
                        FontSize="34"
                        Foreground="#1E5F8A"/>
-            <TextBlock Text="keeps the screen from locking"
-                       FontSize="14"
-                       Foreground="#3E6F90"
-                       Margin="2,-1,0,0"/>
           </StackPanel>
           <Button Width="36" Height="36" HorizontalAlignment="Right" VerticalAlignment="Top"
                   Click="CloseButton_Click" Cursor="Hand" ToolTip="Hide to the tray"
@@ -292,15 +288,17 @@
         </Grid>
 
         <StackPanel Grid.Row="1" Margin="6,10,6,0" VerticalAlignment="Top">
-            <Border x:Name="StatusPill" HorizontalAlignment="Center" CornerRadius="16" BorderThickness="1.2"
-                    BorderBrush="{StaticResource GlassStrokeBrush}" Padding="18,5" Margin="0,0,0,14"
+            <Border x:Name="StatusPill" Height="64" Margin="4,0,4,16" HorizontalAlignment="Stretch"
+                    CornerRadius="32" BorderThickness="1.25"
+                    BorderBrush="{StaticResource GlassStrokeBrush}"
                     Background="{StaticResource GlassNeutralBrush}">
               <Border.Effect>
-                <DropShadowEffect BlurRadius="14" ShadowDepth="1" Opacity="0.16" Color="#1E5F8A"/>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="2" Opacity="0.18" Color="#1E5F8A"/>
               </Border.Effect>
               <Grid>
-                <Border Height="12" VerticalAlignment="Top" Margin="8,0,8,0" CornerRadius="6" Background="{StaticResource GlassShineBrush}" IsHitTestVisible="False"/>
-                <TextBlock x:Name="StatusText" Text="Off" FontFamily="{StaticResource DisplayFont}" FontSize="16" Foreground="#1E5F8A" HorizontalAlignment="Center"/>
+                <Border Height="22" VerticalAlignment="Top" Margin="22,4,22,0" CornerRadius="11" Background="{StaticResource GlassShineBrush}" IsHitTestVisible="False"/>
+                <TextBlock x:Name="StatusText" Text="Off" FontFamily="{StaticResource DisplayFont}" FontSize="26"
+                           Foreground="#1E5F8A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
               </Grid>
             </Border>
 
@@ -350,8 +348,8 @@
                                 AutomationProperties.Name="Enable turn off after"/>
                 </Grid>
 
-                <StackPanel x:Name="TimePanel" Margin="0,12,0,0" Visibility="Collapsed">
-                  <Grid x:Name="SpinnerGrid">
+                <StackPanel x:Name="TimePanel" Margin="0,12,0,0">
+                  <Grid x:Name="SpinnerGrid" IsEnabled="True" Opacity="1">
                     <Grid.RowDefinitions>
                       <RowDefinition Height="Auto"/>
                       <RowDefinition Height="Auto"/>
@@ -418,10 +416,17 @@
                 </StackPanel>
                 <Grid Margin="0,14,0,0">
                   <TextBlock Text="Start with Windows" FontFamily="{StaticResource DisplayFont}" FontSize="16"
-                             Foreground="#1E5F8A" VerticalAlignment="Center"/>
+                             Foreground="#1E5F8A" VerticalAlignment="Center" Margin="0,0,60,0"/>
                   <ToggleButton x:Name="StartupSwitch" Style="{StaticResource TimerSwitchStyle}"
                                 HorizontalAlignment="Right" Click="StartupSwitch_Click"
                                 AutomationProperties.Name="Start with Windows"/>
+                </Grid>
+                <Grid Margin="0,12,0,0">
+                  <TextBlock Text="Launch at Login" FontFamily="{StaticResource DisplayFont}" FontSize="16"
+                             Foreground="#1E5F8A" VerticalAlignment="Center" Margin="0,0,60,0"/>
+                  <ToggleButton x:Name="LaunchAtLoginSwitch" Style="{StaticResource TimerSwitchStyle}"
+                                HorizontalAlignment="Right" Click="LaunchAtLoginSwitch_Click"
+                                AutomationProperties.Name="Launch at Login"/>
                 </Grid>
               </StackPanel>
             </Border>
